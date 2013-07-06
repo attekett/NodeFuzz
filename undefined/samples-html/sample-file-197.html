@@ -1,7 +1,0 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
-<html>
-	
-	
-		<frameset><frame marginwidth="0" marginheight="0" frameborder="0" noresize="no" src="javascript:'&lt;!doctype html&gt;\n&lt;html&gt;\n\t&lt;head&gt;\n\t\t&lt;title&gt;JS1k, 1k demo submission [1104]&lt;/title&gt;\n\t\t&lt;meta charset=&quot;utf-8&quot; /&gt;\n\t&lt;/head&gt;\n\t&lt;body&gt;\n\t\t&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;\n\t\t&lt;script&gt;\n\t\t\tvar b = document.body;\n\t\t\tvar c = document.getElementsByTagName(\'canvas\')[0];\n\t\t\tvar a = c.getContext(\'2d\');\n\t\t\tdocument.body.clientWidth; // fix bug in webkit: http://qfox.nl/weblog/218\n\t\t&lt;/script&gt;\n\t\t&lt;script&gt;\n// start of submission //\nc.width=w=innerWidth;c.height=h=innerHeight;s();function s(){l();c.addEventListener(&quot;mousemove&quot;,m,false);}function m(k){var t,u;if(k.layerX!==undefined){t=k.layerX;u=k.layerY;}else{t=k.offsetX;u=k.offsetY;}l();var o=w/2,p=h/2,r=Math.sqrt(q(t-o)+q(u-p)),v=-Math.PI/2;for(j=0;j&lt;20;j++){a.lineWidth=j+1;a.beginPath();for(i=0;i&lt;3;i++){var z=v+i*2*Math.PI/3,x=o+Math.cos(z-j)*Math.sqrt(q(t-(j*10)-o)+q(u-(j*10)-p)),y=p+Math.sin(z-j)*Math.sqrt(q(t-(j*10)-o)+q(u-(j*10)-p));if(i==0){a.moveTo(x,y);}else{a.lineTo(x,y);}}a.closePath();a.stroke();}}function q(n){return n*n;}function l(){a.globalCompositeOperation=\'xor\';a.clearRect(0,0,w,h);}\r\n\n// end of submission //\n\t\t&lt;/script&gt;\n\t&lt;/body&gt;\n&lt;/html&gt;'" />
-	</frameset>
-</html>
