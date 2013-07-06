@@ -1,0 +1,7 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">
+<html>
+	
+	
+		<frameset><frame marginwidth="0" marginheight="0" frameborder="0" noresize="no" src="javascript:'&lt;!doctype html&gt;\n&lt;html&gt;\n\t&lt;head&gt;\n\t\t&lt;title&gt;JS1k, 1k demo submission [511]&lt;/title&gt;\n\t\t&lt;meta charset=&quot;utf-8&quot; /&gt;\n\t&lt;/head&gt;\n\t&lt;body&gt;\n\t\t&lt;canvas id=&quot;c&quot;&gt;&lt;/canvas&gt;\n\t\t&lt;script&gt; document.body.clientWidth; // webkit fix: http://qfox.nl/weblog/218\n\t\t\t// start of submission //\nk=350;x=[];y=[];r=[];s=[];m=Math;d=document.getElementById(&quot;c&quot;);c=d.getContext(&quot;2d&quot;);d.width=k;d.height=k;function dist(a,b,e,f){return m.sqrt((a-e)*(a-e)+(b-f)*(b-f))}function ok(a){if(dist(x[a],y[a],k/2,k/2)&gt;k/2-r[a])return 0;for(j=0;++j&lt;a;)if(dist(x[a],y[a],x[j],y[j])&lt;r[a]+r[j])return 0;return 1}for(i=0;++i&lt;400;){r[i]=1;s[i]=m.random()*9+3;do{x[i]=m.random()*k;y[i]=m.random()*k}while(!ok(i));for(;ok(i);)r[i]++}\r\nonmousemove=function(a){c.clearRect(0,0,k,k);for(j=0;++j&lt;i;){c.beginPath();c.moveTo(x[j]+r[j],y[j]);for(o=0;o&lt;6;o+=6/s[j])c.lineTo(x[j]+r[j]*m.cos(o),y[j]+r[j]*m.sin(o));c.lineTo(x[j]+r[j],y[j]);c.fillStyle=dist(a.pageX,a.pageY,x[j],y[j])&lt;50%3F&quot;%23a9ffa9&quot;:&quot;%23a9a9ff&quot;;c.fill();c.stroke()}};\n\t\t\t// end of submission //\n\t\t&lt;/script&gt;\n\t&lt;/body&gt;\n&lt;/html&gt;'.replace(/\u200b/g,'')" />
+	</frameset>
+</html>

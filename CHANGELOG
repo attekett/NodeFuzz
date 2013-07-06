@@ -1,0 +1,30 @@
+Changelog:
+
+NodeFuzz version 0.1.1:
+-----------------------
+
+-Initial release
+
+NodeFuzz version 0.1.5:
+-----------------------
+
+Bug fixes: 
+
+- default configuration-file was missing OSX branch.
+
+Features added:
+
+- WebSocket.on('disconnect') 
+  Event that is triggered when WebSocket connection between the NodeFuzz and client is disconnected. Useful for performance optimization in situations where instrumentation doesn't detect a crash i.e ASAN and stack overflow(stack exhaustion) (Note: This feature may cause old instrumentation-modules to stop working because websocketTimeout-event is not triggered if the WebSocket-connection gets disconnected )
+
+- feedbackProtocol
+  Added new WebSocket subprotocol 'feedbackProtocol' for communication between the NodeFuzz and client. This feature allows test case execution analysis on client so that the collected info can be directly delivered to instrumentation/test case generator. 
+  
+
+- Config properties
+  
+  disableDefaultWsOnRequest: 	Boolean to enable/disable the default WebSocket.on('request') handler. (Default: false)
+  addCustomWebSocketHandler: 	Function that is executed if available during WebSocket-server initialization. Gets WebSocket-server object as an argument. Can be used to change WebSocket-server settings and to create new connection-handlers.
+  httpRootDir: 			Root directory for the HTTP-server. (Note: Really poor implementation that did the trick in one of my experiments.) 
+  disableTestCaseBuffer: 	Boolean to enable/disable test case buffer. If enabled this option will disable test case precaching. Implemented for situations like repro-file minimization where the requested test cases depend on execution of previous test case.(Default: false)
+ 

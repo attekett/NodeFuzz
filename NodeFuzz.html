@@ -10,6 +10,12 @@
     window.addEventListener("load", function(event) {
       target=document.getElementById('target')
       socket = new WebSocket("ws://127.0.0.1:"+port, "fuzz-protocol");
+      /*
+        feedbacksocket = new WebSocket(loc, "feedback-protocol");
+        feedbacksocket.addEventListener("open", function(event) {
+          feedbacksocket.send('Feedback-loop initialized on time: '+(new Date()));
+        });
+      */
       socket.addEventListener("open", function(event) {
           socket.send('');
       });

@@ -20,16 +20,19 @@ clientFile: 			Used by nodefuzz.js. Holds a string that is sent to client softwa
 */
 
 /*
+Optional:(NEW)
+disableDefaultWsOnRequest: 	Boolean to enable/disable the default WebSocket.on('request') handler.
+addCustomWebSocketHandler: 	Function that is executed if available on init. Get WebSocket server object as parameter.
+httpRootDir: 				Root directory for the HTTP-server. (Note: Really poor implementation that did the trick in one of my experiments.) 
+disableTestCaseBuffer: 		Boolean to enable/disable test case buffer. More info on changelog
+*/
+
+/*
 Used in demo-stuff:
 
 fuzzfile: 				Default client-file to be used as base for reBuildClientFile
-target:   				Indicates what client software we are targeting. Used for client specific parts of testcase generation and for file names saved by instrumentation.
 reBuildClientFile: 		Used when selected module needs alterations to client-file.
-instrument: 			Instrumentation module is loaded in variable if interaction is needed.
-launch_command: 		Used by instrumentations: Holds the command that starts the client software.
-browser_args: 			Used by instrumentations: Holds the arguments that are given to client software when launched.
 result_dir: 			Used by instrumentations: Directory where instrumentations save logs and repro-files.
-asan_symbolize: 		Used by asan_instrumentations. Location for ASAN-symbolizer script.
 */
 
 var config = {}
@@ -47,9 +50,6 @@ config.testCasesWithoutRestart=100
 
 config.fuzzfile='./NodeFuzz.html'
 config.defaultModuleDirectory='./modules/'
-
-config.target='chrome'
-
 
 /*
 reBuildClientFile modifies NodeFuzz.html content according to following values. 
@@ -73,40 +73,42 @@ config.reBuildClientFile=function (){
 
 config.init=function(){
 
-//Windows specific configurations.
-if(process.platform=='win32'){
-console.log('Loading windows-configuration.');
-//
-//Your configs.
-//
+	if(process.platform=='win32'){
+		console.log('Loading windows-configuration.');
+		//Windows specific configurations.
+
+		//
+		//Your configs.
+		//
+	}
+	else if(process.platform=='darwin'){
+		//OSX configs.
+
+	}
+	else{
+		//Linux configs.
+		console.log('Loading linux-configuration.')
+		config.defaultInstrumentationFile = './instrumentations/instrumentation_linux_asan.js'
+		config.result_dir='../results/'
+		config.type='text/html'
+		config.tagtype='html'
+
+
+		//Configurations for the demo Instrumentation
+		config.target='chrome'
+		config.timeout=1000
+		config.clientTimeout=10
+		config.launchCommand='google-chrome'
+		config.browserArgs = ['--user-data-dir=/tmp/'+config.pid+'/chrome-prof','--disable-translate','--incognito', '--new-window','--no-default-browser-check','--allow-file-access-from-files', '--no-first-run' ,'--no-process-singleton-dialog' ,'http://127.0.0.1:'+config.port]
+
+		config.clientFile=config.reBuildClientFile()
+
+	}
+
 }
-else{
-//Linux configs.
-console.log('Loading linux-configuration.')
-config.instrument = require('./instrumentations/instrumentation_linux_asan.js');
-config.result_dir='../results/'
-config.launch_command_firefox='objdir-ff-asan/dist/bin/firefox'
-config.launch_command='google-chrome'//'/chrome/src/out/Release/chrome'  //NOTE: Demo instrumentation works only on ASAN-built browsers.
-config.browser_args = ['--user-data-dir=/tmp/'+config.pid+'/chrome-prof','--no-sandbox','--disable-translate','--incognito', '--new-window','--no-default-browser-check','--allow-file-access-from-files', '--no-first-run' ,'--no-process-singleton-dialog' ,'http://127.0.0.1:'+config.port]
-config.browser_args_firefox=['-P',config.pid,'-no-remote','http://127.0.0.1:'+config.port]
-config.asan_symbolize='chrome/src/tools/valgrind/asan/asan_symbolize.py'
-if(process.argv.indexOf('firefox')!=-1){
-		config.target='firefox'
-		config.launch_command=config.launch_command_firefox
-		config.browser_args  =config.browser_args_firefox
-}
 
-
-
-config.type='text/html'
-config.tagtype='html'
-
-config.clientFile=config.reBuildClientFile()
-
-setTimeout(function(){instrumentationEvents.emit('startClient')},1000)}
-
-}
 
 
 
 module.exports = config
+

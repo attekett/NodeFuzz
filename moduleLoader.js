@@ -18,7 +18,7 @@ function loadModulesFromFolder(folder){
 				}
 			}
 		}catch(e){
-			console.log('Failed with error  '+e+' when loading file '+files[x])
+			console.log('Still failing')
 		}
 		}
 		else{
@@ -56,13 +56,16 @@ function requireModule(fileName){
 			else{
 				console.log('Module '+fileName+' has no exported property fuzz.')
 			}
-		}catch(e){console.log('Epic fail! '+e); return false}
+		}catch(e){console.log('Epic fail! In: '+fileName+' Error:'+e); return false}
 	}
 }
 
 function loadModules(){
-	if(process.argv.indexOf('-mp') != -1){
-		var returnArray=loadModulesFromFolder(process.argv[(process.argv.indexOf('-mp')+1)])
+	if(process.argv.indexOf('-m') != -1 || process.argv.indexOf('--module') != -1 ){
+		if(process.argv.indexOf('-m') != -1)
+			var returnArray=loadModulesFromFolder(process.argv[(process.argv.indexOf('-m')+1)])
+		else
+			var returnArray=loadModulesFromFolder(process.argv[(process.argv.indexOf('--module')+1)])
 	}
 	else{
 		console.log('No module folder given. Defaulting to '+config.defaultModuleDirectory+' from config.js')

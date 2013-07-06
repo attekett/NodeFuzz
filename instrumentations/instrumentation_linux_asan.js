@@ -1,12 +1,12 @@
 
-
+var disconnectTimeout={}
 //
 //
 //Just a demo. This instrumentation works but I recommend you to write your own. :D
 //
 //
-
-
+config.asan_symbolize='/home/attekett/kettuzz/Helpers/asan_symbolize_new.py'
+crashHandling=0;
 var spawn=require('child_process').spawn
 var exec = require('child_process').exec
 var path = require('path');
@@ -16,7 +16,8 @@ var path=require('path')
 var fs=require('fs')
 var mkdirsSync = function (dirname, mode) {
   if (mode === undefined) mode = 0777 ^ process.umask();
-  var pathsCreated = [], pathsFound = [];
+  var pathsCreated = []
+  var pathsFound = [];
   var fn = dirname;
   while (true) {
     try {
@@ -51,19 +52,17 @@ function cloneArray(obj){
         return copy;
 }
 
-//
-//Parsing starts.
-//
-
 function analyze(input,current,repro,callback){ 
 	if(input.length<20){
 		console.log('Not enough data...')
 		crashHandling=0;asanlog='';
 		callback()
 	}else{
+	console.log('Symbolizing')
 	var asan_output=''
 	var symbolizer=spawn('python', [config.asan_symbolize])
 	symbolizer.stdout.on('data',function(data){asan_output+=data.toString()})
+	symbolizer.stderr.on('data',function(data){console.log('Error Error:(filt) '+data)})
 	symbolizer.stdin.write(input);
 	symbolizer.stdin.end()
 	symbolizer.on('exit',function(){filt_output(asan_output, current, repro,callback);});
@@ -89,22 +88,29 @@ function ASAN_console_filter(input){
 
 function filt_output(input, current, repro,callback){
 	var output=''
+	console.log('Filting')
 	var filt=spawn('c++filt')
 	filt.stdout.on('data',function(data){output+=data.toString()})
+	filt.stderr.on('data',function(data){console.log('Error Error:(filt) '+data)})
 	filt.stdin.write(input);
 	filt.stdin.end()
-	filt.on('exit',function(){symbolized_asan_output=output; ASAN_console_filter(output); file_name_parse(output, current, repro,callback)});
+	filt.on('exit',function(){symbolized_asan_output=output; file_name_parse(output, current, repro,callback)});
 	
 }
+
 function file_name_parse(data, current, repro,callback){
+	console.log('parsing')
 	try{
 	var line_number=0;
 	var file_name=''
 	data=data.split('\n');
 	var lines=data
 	for(i=0; i<data.length; i++){
-		if(data[i].indexOf('== ERROR: AddressSanitizer')>-1){
-			file_name+=data[i].split(' ')[3]+'-'
+		if(data[i].indexOf('ERROR: AddressSanitizer')>-1){
+			if(config.target=='chrome')
+				file_name+=data[i].split(' ')[2]+'-'
+			else
+				file_name+=data[i].split(' ')[3]+'-'
 		}
 		if(data[i].indexOf('#0 ')>-1){
 		line_number=i;
@@ -116,9 +122,7 @@ function file_name_parse(data, current, repro,callback){
 	if(data[line_number].indexOf(' ?? ') > -1){
 		line_number++;
 	}
-	//WTF::StringImpl::findIgnoringCase
 	data=data[line_number]
-	if(data.indexOf("__GI_getenv")==-1){
 	data=data.split('(')[0]
 	data=data.replace(/[^a-zA-Z 0-9]+/g,'');
 	data=data.replace(/^\s+|\s+$/g, '');
@@ -133,61 +137,19 @@ function file_name_parse(data, current, repro,callback){
 		file_name=test.getTime()
 
 	}
-	append_pc(lines, current, repro, file_name,callback)
+	write_repro(current, repro, file_name,callback)
 	
-	}
-	else{
-		console.log('Known duplicate...')
-		callback()
-	}
+
 	}
 	catch(e){
-		console.log('Failed to parse file_name.');
+		console.log('Failed to parse file_name: '+e);
 		var test=new Date()
 		file_name=test.getTime()
-		append_pc(lines, current, repro, file_name,callback)
+		write_repro(current, repro, file_name,callback)
 	}
-	//output_stuff()
 
 }
 
-function output_stuff(){
-	console.log(file_name)
-	console.log(symbolized_asan_output)
-}
-
-function append_pc(lines, current, repro, file_name,callback){
-	try{
-	var parse_line
-	for(i=0; i<lines.length; i++){
-		if(lines[i].indexOf('ERROR: AddressSanitizer')>-1){
-		parse_line=lines[i]
-		break;
-		}
-		
-	}
-	if( parse_line.indexOf("0007 (pc 0x000000425")==-1){
-	var pc=parse_line.substr(parse_line.indexOf('pc '),20)
-	pc=pc.split(' ')
-	pc=pc[1].substr(pc[1].length-3,3)
-	file_name+='-'+pc;
-	write_repro(current, repro, file_name,callback)
-	}
-	else{
-		crashHandling=0;asanlog='';
-		callback()
-	}
-	}
-	catch(e){console.log('Failed to parse PC.'); write_repro(current, repro,  file_name,callback)}
-}
-//
-//Parsing ends.
-//
-
-
-//
-//Writes analysis and reproducing files into results directory.
-//
 function write_repro(current_repro, repro_file, file_name,callback){
 
 	if(file_name=='undefined'){
@@ -203,45 +165,42 @@ function write_repro(current_repro, repro_file, file_name,callback){
 	fs.mkdir(config.result_dir,function(error, stdout, stderr){
 
 		var reproname=file_name
-		console.log('Checking for file '+reproname+'.txt Status ')
 		if(!fs.existsSync(config.result_dir+config.target+'-'+reproname+".txt")){
 
 			var index=0
-			var time=new Date().getTime()
-			mkdirsSync(config.result_dir+'/folders/'+time)
+			mkdirsSync(config.result_dir+'/folders/'+config.target+'-'+reproname)
 			while(repro_file.length){
 			
     			repro=repro_file.pop();
     			index++
-				fs.writeFile(config.result_dir+'/folders/'+time+'/'+config.target+'-'+reproname+index+'.'+config.filetype, repro, function(err) {
+				fs.writeFile(config.result_dir+'/folders/'+config.target+'-'+reproname+'/'+config.target+'-'+reproname+index+'.'+config.filetype, repro, function(err) {
 					if(err) {
 						console.log(err);
 					
 					}
 				}); 
 			}
-			console.log(config.result_dir+config.target+'-'+reproname+'.'+config.filetype)
 			fs.writeFile(config.result_dir+config.target+'-'+reproname+'.'+config.filetype, current_repro, function(err) {
 				if(err) {
 					console.log(err);
 					
 				}
 			}); 
+			fs.writeFile(config.result_dir+'/folders/'+config.target+'-'+reproname+'/'+config.target+'-'+reproname+".txt", symbolized_asan_output, function(err) {
+				fs.writeFile(config.result_dir+config.target+'-'+reproname+".txt", symbolized_asan_output, function(err) {
+					if(err) {
+						console.log(err);
+						callback()
+					} else {
+						ASAN_console_filter(symbolized_asan_output);
+						console.log("The file "+config.target+'-'+reproname+" was saved!");
 		
-			fs.writeFile(config.result_dir+config.target+'-'+reproname+".txt", symbolized_asan_output, function(err) {
-				if(err) {
-					console.log(err);
-					crashHandling=0;asanlog='';
-					callback()
-				} else {
-					console.log("The file was saved!");
-					crashHandling=0;asanlog='';
-					callback()
-				}
+						callback()
+					}
+				}); 
 			}); 
 		}
 		else{
-			crashHandling=0;asanlog='';
 			callback()
 		}
 	});
@@ -249,91 +208,89 @@ function write_repro(current_repro, repro_file, file_name,callback){
 
 }}
 
-
-
-browserStartRetryRound=0
-browser={}
-//
-//Browser spawner and stderr stalker for ASAN-built browsers.
-//
+var browserStartRetryRound=0
+var browser={}
+var asanlog=''
 var startBrowser = function(){
-	if(browser._closesNeeded==browser._closesGot || browserStartRetryRound > 30){
-		try{
-			browser.removeAllListeners('exit');
-			browser.kill('SIGKILL')
-		}
-		catch(e){}
-		try{clearTimeout(timeoutBrowser);}catch(e){}
-		crashHandling=0;
-		browserStartRetryRound=0
-		browser = spawn(config.launch_command, config.browser_args)
-		browser.stderr.on('data',function(data){
-			if(crashHandling==1){
-				asanlog+=data.toString()
-			}
-			else if((data.toString()).indexOf("ERROR: AddressSanitizer")>-1 && crashHandling==0){
-				try{clearTimeout(timeoutGetNewTestcase)}catch(e){}
-				asanlog='';
-				asanlog+=data.toString() 
-				crashHandling=1;
-				setTimeout(function(){
-				if(browser.killed==false)
-					browser.kill('SIGKILL');
-				},250)
-			}	
-		})	
-		browser.on('exit',function(){
-			if(process.platform!='win32'){
-				try{clearTimeout(timeoutGetNewTestcase)}catch(e){}
-    				if(crashHandling){
-    					//
-    					//Filter null-pointers and other annoying stuff.
-    					//
-						if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
-							analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),startBrowser);
-							asanlog='';		
-						}
-						else{
-							crashHandling=0;
+		if(browser._closesNeeded==browser._closesGot || browserStartRetryRound > 30){
+			try{clearTimeout(timeoutBrowser);}catch(e){}
+			setInstrumentationEvents()		
+			browserStartRetryRound=0
+			browser = spawn(config.launchCommand, config.browserArgs)
+			browser.stderr.on('data',function(data){
+				if(asanlog.length>0){
+					asanlog+=data.toString()
+				}
+				else if((data.toString()).indexOf("ERROR: AddressSanitizer")>-1){
+					browser.removeAllListeners('exit');
+					clearInstrumentationEvents()
+					asanlog+=data.toString() 
+					setTimeout(function(){
+						//	if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
+								analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),function(){console.log('Done.')});	
+						//	}
 							asanlog=''
+							browser.kill()
 							startBrowser()
-						}
-    				}
-    				else{
-    					crashHandling=0;
-    					asanlog=''
-    					startBrowser()
-    				}
-			}
-		})
-	}
-	else{
-		try{clearTimeout(timeoutBrowser);}catch(e){}
-		browserStartRetryRound++
-		if(browserStartRetryRound>=30){
-			console.log('Waited long enough. Trying re-kill.')
-			timeoutBrowser=setTimeout(startBrowser,1000)
-			try{
-				browser.kill('SIGKILL')
-			}
-			catch(e){'Failed to kill with error:'+e}
+					},350)
+				}	
+			})	
+			browser.on('exit',function(){
+				asanlog=''
+				clearInstrumentationEvents()
+				startBrowser()					
+			})
+			browser.on('err',function(e){
+				console.log('Failed to start browser with error: '+e)
+			})
 		}
-		else
-			timeoutBrowser=setTimeout(startBrowser,200)
-	}
+		else{
+			try{clearTimeout(timeoutBrowser);}catch(e){}
+			browserStartRetryRound++
+			if(browserStartRetryRound>=30){
+				browser.removeAllListeners('exit');
+				asanlog=''
+				console.log(process.pid+': Waited long enough. Trying re-kill browser pid: '+browser.pid)
+				try{
+					browser.kill('SIGKILL')		
+				}
+				catch(e){console.log('Failed to kill with error:'+e)}
+				browser={}
+				startBrowser()
+			}
+			else
+				timeoutBrowser=setTimeout(startBrowser,200)
+		}
+	
+
 }
 
 function restartBrowser(){
-	try{clearTimeout(timeoutBrowser);}catch(e){}
 	browser.kill('SIGKILL')
 }
 
 function clearBrowserEvents(){
-	try{clearTimeout(timeoutBrowser);}catch(e){}
 	browser.removeAllListeners('exit');
 }
 
-instrumentationEvents.on('websocketTimeout',restartBrowser)
+function handleFeedback(data){
+	console.log(data)
+}
+
+function clearInstrumentationEvents(){
+	instrumentationEvents.removeListener('websocketTimeout',restartBrowser)
+	instrumentationEvents.removeListener('exiting',clearBrowserEvents)
+	instrumentationEvents.removeListener('testCasesWithoutRestartLimit',restartBrowser)
+	instrumentationEvents.removeListener('feedbackMessage',handleFeedback)
+	instrumentationEvents.removeListener('websocketDisconnected',restartBrowser)
+}
+
+function setInstrumentationEvents(){
+	instrumentationEvents.on('websocketTimeout',restartBrowser)	
+	instrumentationEvents.on('exiting',clearBrowserEvents)
+	instrumentationEvents.on('testCasesWithoutRestartLimit',restartBrowser)
+	instrumentationEvents.on('feedbackMessage',handleFeedback)
+	instrumentationEvents.on('websocketDisconnected',restartBrowser)
+}
+
 instrumentationEvents.on('startClient',startBrowser)
-instrumentationEvents.on('exiting',clearBrowserEvents)
-instrumentationEvents.on('testCasesWithoutRestartLimit',restartBrowser)
