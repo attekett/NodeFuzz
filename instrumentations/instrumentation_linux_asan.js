@@ -5,7 +5,7 @@ var disconnectTimeout={}
 //Just a demo. This instrumentation works but I recommend you to write your own. :D
 //
 //
-config.asan_symbolize='/home/attekett/kettuzz/Helpers/asan_symbolize_new.py'
+
 crashHandling=0;
 var spawn=require('child_process').spawn
 var exec = require('child_process').exec
@@ -226,12 +226,15 @@ var startBrowser = function(){
 					clearInstrumentationEvents()
 					asanlog+=data.toString() 
 					setTimeout(function(){
-						//	if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
-								analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),function(){console.log('Done.')});	
-						//	}
+							if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
+								analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),startBrowser);	
+								browser.kill()
+							}
+							else{
+								browser.kill()
+								startBrowser()
+							}
 							asanlog=''
-							browser.kill()
-							startBrowser()
 					},350)
 				}	
 			})	

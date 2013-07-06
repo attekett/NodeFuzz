@@ -97,8 +97,8 @@ config.init=function(){
 		//Configurations for the demo Instrumentation
 		config.target='chrome'
 		config.timeout=1000
-		config.clientTimeout=10
 		config.launchCommand='google-chrome'
+		config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
 		config.browserArgs = ['--user-data-dir=/tmp/'+config.pid+'/chrome-prof','--disable-translate','--incognito', '--new-window','--no-default-browser-check','--allow-file-access-from-files', '--no-first-run' ,'--no-process-singleton-dialog' ,'http://127.0.0.1:'+config.port]
 
 		config.clientFile=config.reBuildClientFile()
