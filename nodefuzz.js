@@ -132,21 +132,27 @@ var http = require('http');
 var websocketConnected=false
 var server = http.createServer(function(request, response) {
 	if(!websocketConnected){
-		if(httpRootDirSet!==undefined && (httpRootDirFiles.indexOf(request.url.trim().slice(1))!=-1)){
-			console.log(request.url)
-			response.writeHead(200)
-			var soundFile=fs.readFileSync(config.httpRootDir+request.url.trim().slice(1))
-			response.end(soundFile)
-		}
-		else if(request.url!='/favicon.ico'){
+		if(request.url!='/favicon.ico'){
 			response.writeHead(200);
 		    response.write(config.clientFile)
 		    response.end();
 		}
+		else{
+			response.writeHead(404);
+			response.end();
+		}
 	}
 	else{
-		response.writeHead(404);
-		response.end();
+		if(httpRootDirSet!==undefined && (httpRootDirFiles.indexOf(request.url.trim().slice(1))!=-1)){
+			console.log(request.url)
+			response.writeHead(200)
+			var responseFile=fs.readFileSync(config.httpRootDir+request.url.trim().slice(1))
+			response.end(responseFile)
+		}
+		else{
+			response.writeHead(404);
+			response.end();
+		}
 	}
 
 });
@@ -223,6 +229,7 @@ if(config.disableDefaultWsOnRequest!==true){
 	})
 	wsServer.on('close',function(){
 		websocketConnected=false
+		testCaseCounter=0
 		setTimeout(function(){instrumentationEvents.emit('websocketDisconnected')},500)
 	})
 }
