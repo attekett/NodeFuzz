@@ -1,4 +1,3 @@
-
 var disconnectTimeout={}
 //
 //
@@ -7,13 +6,12 @@ var disconnectTimeout={}
 //
 
 crashHandling=0;
-var spawn=require('child_process').spawn
+var spawn = require('child_process').spawn
 var exec = require('child_process').exec
 var path = require('path');
+var fs = require('fs')
+var crc32 = require('buffer-crc32');
 
-
-var path=require('path')
-var fs=require('fs')
 var mkdirsSync = function (dirname, mode) {
   if (mode === undefined) mode = 0777 ^ process.umask();
   var pathsCreated = []
@@ -58,14 +56,57 @@ function analyze(input,current,repro,callback){
 		crashHandling=0;asanlog='';
 		callback()
 	}else{
-	console.log('Symbolizing')
-	var asan_output=''
-	var symbolizer=spawn('python', [config.asan_symbolize])
-	symbolizer.stdout.on('data',function(data){asan_output+=data.toString()})
-	symbolizer.stderr.on('data',function(data){console.log('Error Error:(filt) '+data)})
-	symbolizer.stdin.write(input);
-	symbolizer.stdin.end()
-	symbolizer.on('exit',function(){filt_output(asan_output, current, repro,callback);});
+		
+		// decide what to do with the output of a crash
+		if( config.no_symbolize ){
+		    console.log("Not symbolizing ASAN output");
+
+		    crash_name = "";
+		    input = input.split('\n');
+		    for(i=0; i<input.length; i++){
+			if( input[i].indexOf('ERROR: AddressSanitizer')>-1 ){
+			    //console.log("DEBUG line: [" + input[i] + "]");
+			    // ERROR: AddressSanitizer: heap-use-after-free on address 0x7fffe82a3ef0
+			    // ERROR: AddressSanitizer: SEGV on unknown address 0x00009f7537dd
+			    crash_name = input[i].split(' ')[2];
+			    // heap-use-after-free
+			    //console.log("DEBUG crash_name: [" + crash_name + "]" );
+			}
+			if( input[i].indexOf('#0 ')>-1 ){
+			    //console.log("DEBUG line: [" + input[i] + "]");
+			    // #0 0x555559535186 (/home/user/asan-symbolized-linux-release-167422/chrome+0x3fe1186)
+			    crash_loc = input[i].substring( input[i].indexOf('(')+1, input[i].indexOf(')') );
+			    // /home/user/asan-symbolized-linux-release-167422/chrome+0x3fe1186
+			    crash_loc = crash_loc.substring( crash_loc.lastIndexOf("/", crash_loc.lastIndexOf("/")-1) +1 );
+			    // asan-symbolized-linux-release-167422/chrome+0x3fe1186
+			    //console.log("DEBUG crash_loc: [" + crash_loc + "]");
+	
+			    crash_name += "_" + crash_loc.replace("/", "_").replace("+", "_");
+	
+			    // break out of for loop so we only look at the first line containing "#0 "
+			    break;
+			}
+		    }
+		    console.log("crash_name: [" + crash_name + "]");
+	
+		    // need to set symbolized_asan_output globally so write_repro() can write it to a file and for report_grinder()
+		    symbolized_asan_output = "";
+		    for(i=0; i<input.length; i++){
+			symbolized_asan_output += input[i].toString() + "\n";
+		    }
+		    //console.log("DEBUG report_grinder typeof symbolized_asan_output: [" + typeof symbolized_asan_output + "]");
+		    write_repro(current, repro, crash_name, callback);
+		    // write_repro will call report_grinder then return to callback which is startBrowser()
+		} else {
+			console.log('Symbolizing')
+			var asan_output=''
+			var symbolizer=spawn('python', [config.asan_symbolize])
+			symbolizer.stdout.on('data',function(data){asan_output+=data.toString()})
+			symbolizer.stderr.on('data',function(data){console.log('Error Error:(filt) '+data)})
+			symbolizer.stdin.write(input);
+			symbolizer.stdin.end()
+			symbolizer.on('exit',function(){filt_output(asan_output, current, repro,callback);});
+		}
 	}
 }
 
@@ -194,13 +235,14 @@ function write_repro(current_repro, repro_file, file_name,callback){
 					} else {
 						ASAN_console_filter(symbolized_asan_output);
 						console.log("The file "+config.target+'-'+reproname+" was saved!");
-		
+						report_grinder(symbolized_asan_output, repro_file, reproname);
 						callback()
 					}
 				}); 
 			}); 
 		}
 		else{
+			report_grinder(symbolized_asan_output, repro_file, reproname);
 			callback()
 		}
 	});
@@ -295,5 +337,149 @@ function setInstrumentationEvents(){
 	instrumentationEvents.on('feedbackMessage',handleFeedback)
 	instrumentationEvents.on('websocketDisconnected',restartBrowser)
 }
+
+//
+// GRINDER support
+//
+// post crash details to grinder
+function time_format(){
+    function pad(n){return n<10 ? '0'+n : n}
+    d = new Date();
+    return d.getFullYear()+'-'
+    + pad(d.getMonth()+1)+'-'
+    + pad(d.getDate())+'+'
+    + pad(d.getHours())+'%3A'
+    + pad(d.getMinutes())+'%3A'
+    + pad(d.getSeconds())
+}
+
+function hash_getname(line){
+    try{
+	//console.log("hash_getname input: [" + line + "]");
+
+	// if config.no_symbolize=true then there wont be a " in " to indicate the function etc
+	// instead just hash the addresses after the "+"
+	if( line.indexOf(" in ") == -1 ){
+	    output = line.substring( line.lastIndexOf("+")+1, line.lastIndexOf(")") );
+	    return output;
+	}
+	else {
+	    start_str = " in ";
+	    start = line.indexOf(start_str) + start_str.length;
+	    end = line.indexOf(" ", start );
+	    if( start != -1 && end != -1){
+		output = line.substring(start, end);
+		return output;
+	    }
+	    else {
+	    // could not find the data to has so return null so it will still be recorded in grinder
+		return "000000";
+	    }
+	}
+    } catch(e){
+	console.log(e)
+    }
+}
+
+function report_grinder(symbolized_asan_output, repro_file, reproname){
+    try{
+	console.log("Posting crash to grinder");
+
+	//console.log("DEBUG report_grinder input reproname : [" + reproname + "]");
+	node = config.fuzzer_name;
+	//console.log("DEBUG report_grinder node: [" + node + "]");
+	time = time_format();
+	//console.log("DEBUG report_grinder time: [" + time + "]");
+
+	crash_data = new Buffer(symbolized_asan_output).toString('base64');
+	crash_data = crash_data.replace(/\+/g, '-');
+	crash_data = crash_data.replace(/\//g, '_');
+	crash_data = crash_data.replace(/=/g, ',');
+	crash_data = crash_data.replace(/\n/g, '');
+	//console.log("DEBUG report_grinder crash_data: [" + crash_data + "]");
+
+	repro = repro_file[0];
+
+	// huge crash file console.log("DEBUG report_grinder input repro_file: [" + repro_file + "]");
+	// huge crash file console.log("DEBUG report_grinder repro: [" + repro + "]");
+
+	log_data = new Buffer(repro).toString('base64');
+	log_data = log_data.replace(/\+/g, '-');
+	log_data = log_data.replace(/\//g, '_');
+	log_data = log_data.replace(/=/g, ',');
+	log_data = log_data.replace(/\n/g, '');
+	//console.log("DEBUG report_grinder log_data: [" + log_data + "]");
+
+	// write something here to find out your fuzzer name or just hardcode it and not care
+	fuzzername = "unknown"
+
+	// crc32 the name of the function that is crashed on
+	// hash_quick is the function that crashed
+	// hash_full is the last 5 functions
+	asan_array = symbolized_asan_output.split("\n");
+	hash_quick = "";
+	hash_full = "";
+	for(var i=0; i < asan_array.length; i++){
+	    line = asan_array[i];
+	    if( line.indexOf(" #0 ")>-1 || line.indexOf(" #1 ")>-1 || line.indexOf(" #2 ")>-1 || line.indexOf(" #3 ")>-1 || line.indexOf(" #4 ")>-1){
+		hash_line = hash_getname(line);
+		//console.log("hash_getname output: [" + hash_line + "]" );
+		if( hash_line.length > 0 ){
+		    hash_full = crc32( hash_line, hash_full);
+		    //console.log("hash_full: " + hash_full.toString('hex'));
+		}
+	    }
+	}
+	hash_quick = crc32( reproname );
+
+	//if the hash failed for some reason then set it to 000000.000000
+	if( hash_quick == undefined ){
+	    hash_quick = "00000000";
+	}
+	if( hash_full == undefined ){
+	    hash_full = "00000000";
+	}
+
+	//console.log("report_grinder reproname: [" + reproname + "]");
+	console.log("report_grinder hash_quick: [" + hash_quick.toString('hex') + "]");
+	console.log("report_grinder hash_full: [" + hash_full.toString('hex') + "]");
+
+	// now set hash_full as the %08X hex format
+	hash_quick = hash_quick.toString('hex');
+	hash_full = hash_full.toString('hex');
+
+	body = "action=add_crash&key="+config.grinder_key+"&node="+node+"&browser="+config.target+"&type="+reproname+"&fuzzer="+fuzzername+"&hash_quick="+hash_quick+"&hash_full="+hash_full;
+	//console.log("DEBUG body: [" + body + "]");
+	body = encodeURI(body);
+	//console.log("DEBUG body encoded: [" + body + "]");
+	// dont url encode the time, crash_data, or log_data
+	body = body + "&time="+time + "&crash_data="+crash_data + "&log_data="+log_data;
+	//console.log("DEBUG body encoded with time etc: [" + body + "]");
+
+	XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+	req = new XMLHttpRequest();
+	req.open("POST", config.grinder_server + "/status.php",true);
+	req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	req.send(body);
+
+	grinder_log_file = config.result_dir+config.target+'-'+reproname+'_grinder.txt';
+	grinder_log_data = "action=add_crash\nkey="+config.grinder_key+"\nnode="+node+"\nbrowser="+config.target+"\ntype="+reproname+"\nfuzzer="+fuzzername+"\nhash_quick="+hash_quick+"\nhash_full="+hash_full+"\ntime="+time+"\ncrash_data="+crash_data+"\nlog_data="+log_data+"\n";
+
+	console.log("writing grinder crash request to file: " + grinder_log_file);
+
+	fs.writeFile(grinder_log_file, grinder_log_data, function(err) {
+	    if(err) {
+		console.log("error writing grinder log file: " + err);
+	    }
+	});
+
+	console.log("Done posting crash to grinder");
+    } catch(e){
+	console.error(e);
+    }
+}
+//
+// END of GRINDER support
+
 
 instrumentationEvents.on('startClient',startBrowser)
