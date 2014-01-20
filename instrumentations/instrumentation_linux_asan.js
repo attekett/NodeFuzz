@@ -56,7 +56,6 @@ function analyze(input,current,repro,callback){
 		crashHandling=0;asanlog='';
 		callback()
 	}else{
-		
 		// decide what to do with the output of a crash
 		if( config.no_symbolize ){
 		    console.log("Not symbolizing ASAN output");
@@ -268,7 +267,8 @@ var startBrowser = function(){
 					clearInstrumentationEvents()
 					asanlog+=data.toString() 
 					setTimeout(function(){
-							if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 && (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
+							if(asanlog.indexOf("ERROR: AddressSanitizer")>-1 ){
+//&& (asanlog.indexOf("address 0x00000000") == -1 || asanlog.indexOf("pc 0x00000000") > -1 ) && asanlog.indexOf("address 0x0000bbadbeef") == -1 && asanlog.indexOf("cpy-param-overlap") == -1){		
 								analyze(asanlog,config.previousTestCasesBuffer[0],cloneArray(config.previousTestCasesBuffer),startBrowser);	
 								browser.kill()
 							}
@@ -411,7 +411,7 @@ function report_grinder(symbolized_asan_output, repro_file, reproname){
 	//console.log("DEBUG report_grinder log_data: [" + log_data + "]");
 
 	// write something here to find out your fuzzer name or just hardcode it and not care
-	fuzzername = "NodeFuzz"
+	fuzzername = "unknown"
 
 	// crc32 the name of the function that is crashed on
 	// hash_quick is the function that crashed
@@ -476,6 +476,44 @@ function report_grinder(symbolized_asan_output, repro_file, reproname){
 	console.log("Done posting crash to grinder");
     } catch(e){
 	console.error(e);
+    }
+}
+
+// Support for reporting speed to console
+var testcases_counter_old = 0;
+setInterval(report_fuzzing_speed, 60000);
+function report_fuzzing_speed(){
+    testcases_per_minute = config.speedCounter - testcases_counter_old;
+    testcases_counter_old = config.speedCounter;
+    console.log("Test cases per minute: " + testcases_per_minute);
+    update_grinder(testcases_per_minute);
+}
+
+function time_format(){
+    function pad(n){return n<10 ? '0'+n : n}
+    var d = new Date();
+    return d.getFullYear()+'-'
+	+ pad(d.getMonth()+1)+'-'
+	+ pad(d.getDate())+'+'
+	+ pad(d.getHours())+'%3A'
+	+ pad(d.getMinutes())+'%3A'
+	+ pad(d.getSeconds())
+}
+
+function update_grinder(testcases_per_minute){
+    try{
+	time = time_format();
+	var os = require("os");
+	body = "action=update_job_status&node="+os.hostname()+"&tcpm="+testcases_per_minute+"&key="+config.grinder_key+"&time=";
+	body = encodeURI(body);
+	body = body + time;
+	XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+	req = new XMLHttpRequest();
+	req.open("POST",config.grinder_server + "/status.php",true);
+	req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	req.send(body);
+    } catch(e){
+	console.error("Grinder update_grinder error: " + e);
     }
 }
 //
