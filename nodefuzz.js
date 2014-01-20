@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 
 if(process.argv.indexOf('help')!=-1 || process.argv.indexOf('-help')!=-1 || process.argv.indexOf('--help')!=-1){	
-	console.log('NodeFuzz v0.1.5')
+	console.log('NodeFuzz v0.1.6')
 	console.log('Check config.js for about everything.')
 	console.log('-m | --module           - "ModulePath" where to load modules. (Note: can be file or folder)')
 	console.log('-c | --config           - Configuration-file path. (Note: Configuration-file must export config-object)')
 	console.log('-i | --instrumentation  - Instrumentation-module path.')
-	console.log('-n |                    - Name of the nodefuzz instance when reporting to grinder')
-	console.log('-b |                    - Browser, either "chrome" or "firefox"')
 	console.log('NodeFuzz is tested to work on nodejs 0.10.8')
 	process.exit(1)
 }
@@ -50,49 +48,6 @@ else{
 		process.exit(1)
 	}
 }
-
-//
-// GRINDER
-// Support for setting config.target
-//
-if( process.argv.indexOf('-b') != -1 ){
-    try{
-	if(process.argv.indexOf('-b')!=-1){
-	    console.log("browser: " + process.argv[process.argv.indexOf('-b')+1]);
-	    config.target = process.argv[process.argv.indexOf('-b')+1];
-	}
-    }
-    catch(e){
-	console.log('Error setting config.target: ' + e)
-    }
-}
-else {
-    // default to chrome
-    config.target = 'chrome';
-}
-//
-// GRINDER
-// Support for fuzzer name to log to grinder
-//
-var os = require("os");
-if( process.argv.indexOf('-n') != -1 ){
-    try{
-	if(process.argv.indexOf('-n')!=-1){
-	    config.fuzzer_num = process.argv[process.argv.indexOf('-n')+1];
-	    config.fuzzer_name = os.hostname() + " [" + config.target + "_" + config.fuzzer_num + "]";
-	    console.log('Fuzzer name: ' + config.fuzzer_name);
-	}
-    }
-    catch(e){
-	console.log('Error setting fuzzer name: ' + e)
-    }
-}
-else {
-    config.fuzzer_name = os.hostname();
-}
-// END OF GRINDER SUPPORT
-//
-
 
 if(config.hasOwnProperty('init'))
 	config.init()
@@ -140,7 +95,10 @@ else{
 var moduleLoader=require('./moduleLoader.js')
 var fuzzModules=moduleLoader.loadModules()
 
+config.speedCounter=0
+
 var testCaseBuffer=[]
+config.previousTestCasesBuffer=[]
 var previousTestCasesBuffer=config.previousTestCasesBuffer
 var httpRootDirSet
 
@@ -303,10 +261,8 @@ function ra(a) {
 //
 function sendNewTestCase(connection){
 
-	// GRINDER support
 	// update the variable to keep track of the current testcases per minute
-	update_testcase_counter();
-	//
+	config.speedCounter = config.speedCounter + 1;
 
 	var currentTestCase
 	if(!config.disableTestCaseBuffer){
@@ -348,49 +304,5 @@ function sendNewTestCase(connection){
 		},50)
 	}
 }
-
-//
-// GRINDER
-// Support for logging and reporting to grinder
-//
-var testcases_per_minute = 0;
-var testcases_counter = 0;
-var testcases_counter_old = 0;
-function update_testcase_counter(){
-	testcases_counter = testcases_counter + 1;
-}
-function time_format(){
-	function pad(n){return n<10 ? '0'+n : n}
-	var d = new Date();
-	return d.getFullYear()+'-'
-		+ pad(d.getMonth()+1)+'-'
-		+ pad(d.getDate())+'+'
-		+ pad(d.getHours())+'%3A'
-		+ pad(d.getMinutes())+'%3A'
-		+ pad(d.getSeconds())
-}
-// every minute post an update to grinder with the current speed
-setInterval(update_grinder, 60000);
-function update_grinder(){
-	try{
-		testcases_per_minute = testcases_counter - testcases_counter_old;
-		testcases_counter_old = testcases_counter;
-		time = time_format();
-		body = "action=update_job_status&node="+config.fuzzer_name+"&tcpm="+testcases_per_minute+"&key="+config.grinder_key+"&time=";
-		body = encodeURI(body);
-		body = body + time;
-		XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-		req = new XMLHttpRequest();
-		req.open("POST",config.grinder_server + "/status.php",true);
-		req.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
-		req.send(body);
-		console.log("update_grinder: test cases per minute: " + testcases_per_minute);
-	} catch(e){
-		console.error("Grinder update_grinder error: " + e);
-	}
-}
-// END OF GRINDER SUPPORT
-//
-
 
 instrumentationEvents.emit('startClient')
