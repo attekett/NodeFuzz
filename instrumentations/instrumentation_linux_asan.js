@@ -411,7 +411,7 @@ function report_grinder(symbolized_asan_output, repro_file, reproname){
 	//console.log("DEBUG report_grinder log_data: [" + log_data + "]");
 
 	// write something here to find out your fuzzer name or just hardcode it and not care
-	fuzzername = "unknown"
+	fuzzername = "NodeFuzz"
 
 	// crc32 the name of the function that is crashed on
 	// hash_quick is the function that crashed
