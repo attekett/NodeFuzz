@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 if(process.argv.indexOf('help')!=-1 || process.argv.indexOf('-help')!=-1 || process.argv.indexOf('--help')!=-1){	
-	console.log('NodeFuzz v0.1.5')
+	console.log('NodeFuzz v0.1.6')
 	console.log('Check config.js for about everything.')
-	console.log('-m | --module  - "ModulePath" where to load modules. (Note: can be file or folder)')
-	console.log('-c | --config  - Configuration-file path. (Note: Configuration-file must export config-object)')
+	console.log('-m | --module           - "ModulePath" where to load modules. (Note: can be file or folder)')
+	console.log('-c | --config           - Configuration-file path. (Note: Configuration-file must export config-object)')
 	console.log('-i | --instrumentation  - Instrumentation-module path.')
 	console.log('NodeFuzz is tested to work on nodejs 0.10.8')
 	process.exit(1)
@@ -95,7 +95,10 @@ else{
 var moduleLoader=require('./moduleLoader.js')
 var fuzzModules=moduleLoader.loadModules()
 
+config.speedCounter=0
+
 var testCaseBuffer=[]
+config.previousTestCasesBuffer=[]
 var previousTestCasesBuffer=config.previousTestCasesBuffer
 var httpRootDirSet
 
@@ -258,6 +261,9 @@ function ra(a) {
 //
 function sendNewTestCase(connection){
 
+	// update the variable to keep track of the current testcases per minute
+	config.speedCounter = config.speedCounter + 1;
+
 	var currentTestCase
 	if(!config.disableTestCaseBuffer){
 		if(testCaseBuffer.length==0){
@@ -298,7 +304,5 @@ function sendNewTestCase(connection){
 		},50)
 	}
 }
-
-
 
 instrumentationEvents.emit('startClient')

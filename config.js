@@ -52,6 +52,17 @@ config.fuzzfile='./NodeFuzz.html'
 config.defaultModuleDirectory='./modules/'
 
 /*
+Support for reporting to Grinder <https://github.com/stephenfewer/grinder>
+*/
+config.grinder_server="http://10.0.0.2/grinder"
+config.grinder_key="AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPP"
+
+// if set to true will not run asan_symbolize and will attempt to report crash for symbolizing later
+config.no_symbolize=true
+config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
+
+
+/*
 reBuildClientFile modifies NodeFuzz.html content according to following values. 
 the client-file NodeFuzz.html has more tricks in it than just html-loading. ;)
 */
@@ -98,9 +109,7 @@ config.init=function(){
 		config.target='chrome'
 		config.timeout=1000
 		config.launchCommand='google-chrome'
-		config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
 		config.browserArgs = ['--user-data-dir=/tmp/'+config.pid+'/chrome-prof','--disable-translate','--incognito', '--new-window','--no-default-browser-check','--allow-file-access-from-files', '--no-first-run' ,'--no-process-singleton-dialog' ,'http://127.0.0.1:'+config.port]
-
 		config.clientFile=config.reBuildClientFile()
 
 	}

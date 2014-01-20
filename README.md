@@ -16,10 +16,13 @@ Usage:
 	(Note: If you see error about native code compile from websocket-module you can ignore it. 
 	NodeFuzz doesn't use that feature of node-websocket.)
 
-	3.Configure required parameters from config.js
+	3.Run "npm install buffer-crc32" and "npm install xmlhttprequest" in the NodeFuzz root folder
+	to install the required module for reporting to Grinder.
 
-	4.node nodefuzz.js [arguments] You can check the arguments available with node nodefuzz.js --help 
+	4.Configure required parameters from config.js
+
+	5.node nodefuzz.js [arguments] You can check the arguments available with node nodefuzz.js --help 
 	(Not many arguments available yet.)
 
-	5.see results in result-folder (default: ../results)
+	6.see results in result-folder (default: ../results)
 
