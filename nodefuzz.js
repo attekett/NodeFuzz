@@ -357,7 +357,7 @@ var testcases_per_minute = 0;
 var testcases_counter = 0;
 var testcases_counter_old = 0;
 function update_testcase_counter(){
-	testcases_counter = testcases_counter + config.iframes;
+	testcases_counter = testcases_counter + 1;
 }
 function time_format(){
 	function pad(n){return n<10 ? '0'+n : n}
