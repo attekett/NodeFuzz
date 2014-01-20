@@ -386,7 +386,8 @@ function report_grinder(symbolized_asan_output, repro_file, reproname){
 	console.log("Posting crash to grinder");
 
 	//console.log("DEBUG report_grinder input reproname : [" + reproname + "]");
-	node = config.fuzzer_name;
+	var os = require("os");
+	node = os.hostname();
 	//console.log("DEBUG report_grinder node: [" + node + "]");
 	time = time_format();
 	//console.log("DEBUG report_grinder time: [" + time + "]");
