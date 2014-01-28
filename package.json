@@ -1,8 +1,8 @@
 {
   "author": "Atte Kettunen <attekett@gmail.com>",
   "name": "NodeFuzz",
-  "description": "Browser fuzzer/testcase injector via WebSockets",
-  "version": "0.1.5",
+  "description": "Browser fuzz testing harness",
+  "version": "0.1.6",
   "repository": {
     "type": "git",
     "url": ""

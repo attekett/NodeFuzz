@@ -1,9 +1,17 @@
 Changelog:
 
-NodeFuzz version 0.1.1:
+NodeFuzz version 0.1.6:
 -----------------------
 
--Initial release
+External contribution:
+
+Linux ASAN-instrumentation with support for reporting speed and crashes to Grinder.
+Contributed by: Ryan Baxendale 
+
+Misc:
+
+Removed some try{...}catch(){...} from moduleLoader.js. Now you get more clear error message,
+but you have to be more careful with what you try to load. :)
 
 NodeFuzz version 0.1.5:
 -----------------------
@@ -38,7 +46,13 @@ Features added:
    Boolean to enable/disable test case buffer. If enabled this option will disable test case precaching. Implemented for situations like repro-file minimization where the requested test cases depend on execution of previous test case.(Default: false)
  
 - Commandline flags changed
- 	
- 	-m | --module  - "ModulePath" where to load modules. (Note: can be file or folder)
-	-c | --config  - Configuration-file path. (Note: Configuration-file must export config-object)
-	-i | --instrumentation  - Instrumentation-module path.
+  
+  -m | --module  - "ModulePath" where to load modules. (Note: can be file or folder)
+  -c | --config  - Configuration-file path. (Note: Configuration-file must export config-object)
+  -i | --instrumentation  - Instrumentation-module path.
+
+NodeFuzz version 0.1.1:
+-----------------------
+
+-Initial release
+

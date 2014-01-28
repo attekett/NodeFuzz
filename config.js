@@ -10,7 +10,6 @@ You can also add commandline-flags or platform specific configs like demonstrate
 Required:
 
 bufferSize: 			Used by nodefuzz.js. Defines how many previous testcases will be hold in previousTestCasesBuffer.
-previousTestCasesBuffer:Used by nodefuzz.js. Holds n previous testcases sent to client. n is defined by config.bufferSize. You can save crash reproducing file from this buffer. See instrumentation-module for example.
 defaultModuleDirectory: Used by moduleLoader.js. Defines default location where fuzzer-modules are loaded
 						when -mp commandline argument is not used.
 port: 					Used by nodefuzz.js. Defines port for HTTP-server.
@@ -20,7 +19,10 @@ clientFile: 			Used by nodefuzz.js. Holds a string that is sent to client softwa
 */
 
 /*
-Optional:(NEW)
+Optional:
+previousTestCasesBuffer: 	Used by nodefuzz.js. Holds n previous testcases sent to client. n is defined by config.bufferSize. 
+							You can save crash reproducing file from this buffer. See instrumentation-module for example.
+							(Note: This variable is now defined in nodefuzz.js)
 disableDefaultWsOnRequest: 	Boolean to enable/disable the default WebSocket.on('request') handler.
 addCustomWebSocketHandler: 	Function that is executed if available on init. Get WebSocket server object as parameter.
 httpRootDir: 				Root directory for the HTTP-server. (Note: Really poor implementation that did the trick in one of my experiments.) 
@@ -38,7 +40,7 @@ result_dir: 			Used by instrumentations: Directory where instrumentations save l
 var config = {}
 
 config.bufferSize=10
-config.previousTestCasesBuffer=[]
+//config.previousTestCasesBuffer=[]
 
 
 config.pid=process.pid 
@@ -52,13 +54,15 @@ config.fuzzfile='./NodeFuzz.html'
 config.defaultModuleDirectory='./modules/'
 
 /*
-Support for reporting to Grinder <https://github.com/stephenfewer/grinder>
-*/
+
+//Support for reporting to Grinder <https://github.com/stephenfewer/grinder>
+//Needed for instrumentation_linux_asan_grinder.js
 config.grinder_server="http://10.0.0.2/grinder"
 config.grinder_key="AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPP"
 
 // if set to true will not run asan_symbolize and will attempt to report crash for symbolizing later
 config.no_symbolize=true
+*/
 config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
 
 

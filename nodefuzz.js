@@ -95,7 +95,7 @@ else{
 var moduleLoader=require('./moduleLoader.js')
 var fuzzModules=moduleLoader.loadModules()
 
-config.speedCounter=0
+config.testCaseCounter=0
 
 var testCaseBuffer=[]
 config.previousTestCasesBuffer=[]
@@ -184,7 +184,7 @@ if(config.addCustomWebSocketHandler)
 //WebSocket server connection handler.
 //
 //Variables
-//testCaseCounter: 	Counts testcases done without client restart. 
+//testCasesWithoutRestartCounter: 	Counts testcases done without client restart. 
 //sending: 			Tracks if testcase sending is already ongoing. Used to prevent errors because of multiple simultaneous requests. 
 //
 //Events
@@ -193,7 +193,7 @@ if(config.addCustomWebSocketHandler)
 //websocketDisconnected: 		Triggered when the WebSocket-connection is disconnected
 //
 if(config.disableDefaultWsOnRequest!==true){								
-	var testCaseCounter=0
+	var testCasesWithoutRestartCounter=0
 	var sending=false
 	wsServer.on('request', function(request) {
 		websocketConnected=true
@@ -202,17 +202,17 @@ if(config.disableDefaultWsOnRequest!==true){
 		    connection.on('message', function(message) {
 		    		if(!sending){
 			    		sending=true
-			    		testCaseCounter++
+			    		testCasesWithoutRestartCounter++
 						try{clearTimeout(timeoutGetNewTestcase);}catch(e){}
-			    	if(testCaseCounter > config.testCasesWithoutRestart){
+			    	if(testCasesWithoutRestartCounter > config.testCasesWithoutRestart){
 			    		sending=false
-						testCaseCounter=0
+						testCasesWithoutRestartCounter=0
 						instrumentationEvents.emit('testCasesWithoutRestartLimit')
 			    	}
 			    	else{
 			    		timeoutGetNewTestcase=setTimeout(function(){
 							sending=false
-							testCaseCounter=0
+							testCasesWithoutRestartCounter=0
 							instrumentationEvents.emit('websocketTimeout')
 						},config.timeout);
 			    		
@@ -232,7 +232,7 @@ if(config.disableDefaultWsOnRequest!==true){
 	})
 	wsServer.on('close',function(){
 		websocketConnected=false
-		testCaseCounter=0
+		testCasesWithoutRestartCounter=0
 		setTimeout(function(){instrumentationEvents.emit('websocketDisconnected')},500)
 	})
 }
@@ -261,8 +261,8 @@ function ra(a) {
 //
 function sendNewTestCase(connection){
 
-	// update the variable to keep track of the current testcases per minute
-	config.speedCounter = config.speedCounter + 1;
+	// update the variable to keep track of the current testcase count
+	config.testCaseCounter = config.testCaseCounter + 1;
 
 	var currentTestCase
 	if(!config.disableTestCaseBuffer){

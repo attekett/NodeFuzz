@@ -7,19 +7,14 @@ function loadModulesFromFolder(folder){
 	var returnArray=new Array()
 	try{
 		if(fs.statSync(folder).isDirectory()){
-		var files=fs.readdirSync(folder);
-		try{
+			var files=fs.readdirSync(folder);
 			for(x=0;x<files.length;x++){
-
 				var temp=requireModule(folder+'/'+files[x])
 				if(temp){
 					console.log('Successfully required module '+files[x])
 					returnArray.push(temp)
 				}
 			}
-		}catch(e){
-			console.log('Still failing')
-		}
 		}
 		else{
 			var temp=requireModule(folder)
@@ -43,20 +38,18 @@ function requireModule(fileName){
 	if( fs.statSync(fileName).isDirectory() ){
         console.log('Will not handle directories in module-dir. Skipping '+fileName)
     }
-    else{    
-		try{
-			var temp=require(fileName)
-			if(temp.hasOwnProperty('fuzz')){
-				if(temp.hasOwnProperty('init')){
-					console.log('Found property init() from module '+fileName)
-					var tmp=temp.init()
-				}
-				return temp
+	else{    
+		var temp=require(fileName)
+		if(temp.hasOwnProperty('fuzz')){
+			if(temp.hasOwnProperty('init')){
+				console.log('Found property init() from module '+fileName)
+				var tmp=temp.init()
 			}
-			else{
-				console.log('Module '+fileName+' has no exported property fuzz.')
-			}
-		}catch(e){console.log('Epic fail! In: '+fileName+' Error:'+e); return false}
+			return temp
+		}
+		else{
+			console.log('Module '+fileName+' has no exported property fuzz.')
+		}
 	}
 }
 
