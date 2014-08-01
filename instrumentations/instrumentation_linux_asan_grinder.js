@@ -486,8 +486,8 @@ function report_grinder(symbolized_asan_output, repro_file, reproname){
 var testcases_counter_old = 0;
 setInterval(report_fuzzing_speed, 60000);
 function report_fuzzing_speed(){
-    testcases_per_minute = config.speedCounter - testcases_counter_old;
-    testcases_counter_old = config.speedCounter;
+    testcases_per_minute = config.testCaseCounter - testcases_counter_old;
+    testcases_counter_old = config.testCaseCounter;
     console.log("Test cases per minute: " + testcases_per_minute);
     update_grinder(testcases_per_minute);
 }
