@@ -344,16 +344,6 @@ function setInstrumentationEvents(){
 // GRINDER support
 //
 // post crash details to grinder
-function time_format(){
-    function pad(n){return n<10 ? '0'+n : n}
-    d = new Date();
-    return d.getFullYear()+'-'
-    + pad(d.getMonth()+1)+'-'
-    + pad(d.getDate())+'+'
-    + pad(d.getHours())+'%3A'
-    + pad(d.getMinutes())+'%3A'
-    + pad(d.getSeconds())
-}
 
 function hash_getname(line){
     try{
