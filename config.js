@@ -37,10 +37,10 @@ reBuildClientFile: 		Used when selected module needs alterations to client-file.
 result_dir: 			Used by instrumentations: Directory where instrumentations save logs and repro-files.
 */
 
-var config = {};
+const config = {};
 
 config.bufferSize = 10;
-//config.previousTestCasesBuffer=[]
+// config.previousTestCasesBuffer=[]
 
 config.pid = process.pid;
 config.port = process.pid + 2000;
@@ -69,22 +69,16 @@ the client-file NodeFuzz.html has more tricks in it than just html-loading. ;)
 */
 config.reBuildClientFile = function () {
   //
-  //Write your own function in here if needed.
+  // Write your own function in here if needed.
   //
-  var fs = require("fs");
-  var baseFile = fs.readFileSync(config.fuzzfile).toString();
-  var clientFile = baseFile.split("\n");
+  const fs = require("fs");
+  const baseFile = fs.readFileSync(config.fuzzfile).toString();
+  const clientFile = baseFile.split("\n");
   for (i = 0; i < clientFile.length; i++) {
     if (clientFile[i].indexOf("<script>") > -1) {
-      clientFile[i] =
-        clientFile[i] +
-        ' \nvar tagtype="' +
-        config.tagtype +
-        '" \nvar port=' +
-        config.port +
-        '\n var type="' +
-        config.type +
-        '"\n';
+      clientFile[
+        i
+      ] = `${clientFile[i]} \nvar tagtype="${config.tagtype}" \nvar port=${config.port}\n var type="${config.type}"\n`;
       break;
     }
   }
@@ -94,15 +88,15 @@ config.reBuildClientFile = function () {
 config.init = function () {
   if (process.platform == "win32") {
     console.log("Loading windows-configuration.");
-    //Windows specific configurations.
+    // Windows specific configurations.
 
     //
-    //Your configs.
+    // Your configs.
     //
   } else if (process.platform == "darwin") {
-    //OSX configs.
+    // OSX configs.
   } else {
-    //Linux configs.
+    // Linux configs.
     console.log("Loading linux-configuration.");
     config.defaultInstrumentationFile =
       "./instrumentations/instrumentation_linux_asan.js";
@@ -110,12 +104,12 @@ config.init = function () {
     config.type = "text/html";
     config.tagtype = "html";
 
-    //Configurations for the demo Instrumentation
+    // Configurations for the demo Instrumentation
     config.target = "chrome";
     config.timeout = 1000;
     config.launchCommand = "google-chrome";
     config.browserArgs = [
-      "--user-data-dir=/tmp/" + config.pid + "/chrome-prof",
+      `--user-data-dir=/tmp/${config.pid}/chrome-prof`,
       "--disable-translate",
       "--incognito",
       "--new-window",
@@ -123,7 +117,7 @@ config.init = function () {
       "--allow-file-access-from-files",
       "--no-first-run",
       "--no-process-singleton-dialog",
-      "http://127.0.0.1:" + config.port,
+      `http://127.0.0.1:${config.port}`,
     ];
     config.clientFile = config.reBuildClientFile();
   }

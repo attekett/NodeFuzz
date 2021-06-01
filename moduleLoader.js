@@ -1,56 +1,55 @@
-var fs = require("fs");
+const fs = require("fs");
 
 //
-//Function to detect if given path was file or folder and load files(s)
+// Function to detect if given path was file or folder and load files(s)
 //
 function loadModulesFromFolder(folder) {
-  var returnArray = new Array();
+  const returnArray = new Array();
   try {
     if (fs.statSync(folder).isDirectory()) {
-      var files = fs.readdirSync(folder);
+      const files = fs.readdirSync(folder);
       for (x = 0; x < files.length; x++) {
-        var temp = requireModule(folder + "/" + files[x]);
+        var temp = requireModule(`${folder}/${files[x]}`);
         if (temp) {
-          console.log("Successfully required module " + files[x]);
+          console.log(`Successfully required module ${files[x]}`);
           returnArray.push(temp);
         }
       }
     } else {
       var temp = requireModule(folder);
       if (temp) {
-        console.log("Successfully required module " + folder);
+        console.log(`Successfully required module ${folder}`);
         returnArray.push(temp);
       }
     }
   } catch (e) {
-    console.log("Failed to get modules from " + folder + " with error " + e);
+    console.log(`Failed to get modules from ${folder} with error ${e}`);
   }
 
   return returnArray;
 }
 
 //
-//Function to check if file given is compatible to NodeFuzz.
+// Function to check if file given is compatible to NodeFuzz.
 //
-//Each module is required to export at least fuzz() method. Also init-method is recommended if module needs some initializing.
-//If module exports init() method then the init is executed when detected.
+// Each module is required to export at least fuzz() method. Also init-method is recommended if module needs some initializing.
+// If module exports init() method then the init is executed when detected.
 //
 function requireModule(fileName) {
   if (fs.statSync(fileName).isDirectory()) {
     console.log(
-      "Will not handle directories in module-dir. Skipping " + fileName,
+      `Will not handle directories in module-dir. Skipping ${fileName}`,
     );
   } else {
-    var temp = require(fileName);
+    const temp = require(fileName);
     if (temp.hasOwnProperty("fuzz")) {
       if (temp.hasOwnProperty("init")) {
-        console.log("Found property init() from module " + fileName);
-        var tmp = temp.init();
+        console.log(`Found property init() from module ${fileName}`);
+        const tmp = temp.init();
       }
       return temp;
-    } else {
-      console.log("Module " + fileName + " has no exported property fuzz.");
     }
+    console.log(`Module ${fileName} has no exported property fuzz.`);
   }
 }
 
@@ -69,9 +68,7 @@ function loadModules() {
       );
   } else {
     console.log(
-      "No module folder given. Defaulting to " +
-        config.defaultModuleDirectory +
-        " from config.js",
+      `No module folder given. Defaulting to ${config.defaultModuleDirectory} from config.js`,
     );
     var returnArray = loadModulesFromFolder(config.defaultModuleDirectory);
   }
@@ -81,14 +78,14 @@ function loadModules() {
     process.exit(1);
   }
 
-  console.log("We have " + returnArray.length + " modules available.");
+  console.log(`We have ${returnArray.length} modules available.`);
   return returnArray;
 }
 module.exports = {
-  loadModulesFromFolder: function (folder) {
+  loadModulesFromFolder(folder) {
     return loadModulesFromFolder(folder);
   },
-  loadModules: function () {
+  loadModules() {
     return loadModules();
   },
 };
