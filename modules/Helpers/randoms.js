@@ -268,7 +268,7 @@ const entity_table = [
 function HTMLEscape(str) {
   let outj = ""; // javascript escaped hex
   let outh = ""; // html escaped decimal
-  for (i = 0; i < str.length; i++) {
+  for (let i = 0; i < str.length; i++) {
     const ch = str.charCodeAt(i);
     outj += "\\u";
     outj += ((ch >> 12) & 15).toString(16);
@@ -282,7 +282,7 @@ function HTMLEscape(str) {
   return outh;
 }
 
-string = function (max) {
+const string = function (max) {
   const letters =
     "abcdefghijklmnopqrstuvwxyzåäö-.+½!#¤%&/()=?}][{‚‰$£@0123456789ABCDEF".split(
       "",
@@ -313,17 +313,18 @@ function u(round) {
     return "a";
   }
   try {
-    num = Math.round(111411 * Math.random());
-    const uni = eval(`"\\u${num.toString(16)}"`);
+    const num = Math.round(111411 * Math.random());
+    const uni = String.fromCodePoint(num);
     return uni.length > 1 ? u(round) : uni;
   } catch (e) {
     return "a";
   }
 }
 const escapable =
+  // eslint-disable-next-line no-control-regex
   /[\x00-\x1f\ud800-\udfff\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufff0-\uffff]/g;
 
-randbool = function () {
+const randbool = function () {
   return rint(2);
 };
 
@@ -331,28 +332,28 @@ function filterUnicode(quoted) {
   escapable.lastIndex = 0;
   if (!escapable.test(quoted)) return quoted;
 
-  return quoted.replace(escapable, (a) => "");
+  return quoted.replace(escapable, () => "");
 }
 
-srint = function (upto) {
+const srint = function (upto) {
   return [-1, 1][(Math.random() * 2) | 0] * Math.floor(upto * Math.random());
 };
 
-rint = function (upto) {
+const rint = function (upto) {
   return Math.floor(upto * Math.random());
 };
-ra = function (a) {
+const ra = function (a) {
   return a[rint(a.length)];
 };
-raPos = function (a) {
+const raPos = function (a) {
   return a[rint(a.length) + 1];
 };
 
-calcWidth = function () {
+const calcWidth = function () {
   return rint(1000);
 };
 
-getRandomColor = function () {
+const getRandomColor = function () {
   const prob = rint(50);
   if (prob > 35) {
     if (rint(2)) {
@@ -389,7 +390,7 @@ function colorValue() {
   return returnString;
 }
 
-getRandomHex = function (max) {
+const getRandomHex = function (max) {
   const letters = "0123456789ABCDEF".split("");
   let hex = "";
   for (let i = 0; i < max; i++) {
@@ -398,55 +399,55 @@ getRandomHex = function (max) {
   return hex;
 };
 
-floatValue = function () {
+const floatValue = function () {
   const rand = rint(40);
   if (rand > 10) {
     return [-1, 1][(Math.random() * 2) | 0] * Math.random();
   }
-  if (rand == 0) {
+  if (rand === 0) {
     return [-1, 1][(Math.random() * 2) | 0] * Math.random() * rint(100000);
   }
-  if (rand == 1) {
+  if (rand === 1) {
     return (
       [-1, 1][(Math.random() * 2) | 0] * Math.random() * rint(100000) +
       rint(1000000)
     );
   }
-  if (rand == 2) {
+  if (rand === 2) {
     return [-1, 1][(Math.random() * 2) | 0] * Math.random() + rint(1000000);
   }
-  if (rand == 3) {
+  if (rand === 3) {
     return `${
       [-1, 1][(Math.random() * 2) | 0] * Math.random() * rint(100000)
     }${rint(1000000)}${rint(1000000)}`;
   }
   return [-1, 1][(Math.random() * 2) | 0] * Math.random() * rint(10);
 };
-randoms = function () {
+const randoms = function () {
   const rand = Math.floor(Math.random() * 25);
   if (rand > 10) {
     return rint(1000);
   }
-  if (rand == 5) {
+  if (rand === 5) {
     return rint(100000);
   }
-  if (rand == 0) {
+  if (rand === 0) {
     return floatValue();
   }
-  if (rand == 1) {
+  if (rand === 1) {
     return `${[-1, 1][(Math.random() * 2) | 0] * rint(1000)}e${
       [-1, 1][(Math.random() * 2) | 0] * rint(1000)
     }`;
   }
-  if (rand == 2) {
+  if (rand === 2) {
     return `${[-1, 1][(Math.random() * 2) | 0] * Math.random()}e${
       [-1, 1][(Math.random() * 2) | 0] * rint(3000)
     }`;
   }
-  if (rand == 3) {
+  if (rand === 3) {
     return [-1, 1][(Math.random() * 2) | 0] * rint(1000000000000000);
   }
-  if (rand == 4) {
+  if (rand === 4) {
     return `0x${getRandomHex(Math.floor(Math.random() * 20) + 1)}`;
   }
   return [-1, 1][(Math.random() * 2) | 0] * rint(1000);
@@ -457,11 +458,11 @@ while(rounds--){
 	console.log(randoms())
 } */
 
-rgbInt = function () {
+const rgbInt = function () {
   return rint(255);
 };
 
-arrayWalk = function (input) {
+const arrayWalk = function (input) {
   const obj = input;
   // console.log(obj)
   if (obj instanceof Array) {
@@ -476,53 +477,56 @@ arrayWalk = function (input) {
   return "\n\n\n\nBujaa!!! There is a bug!\n\n\n\n";
 };
 
-pxValue = function () {
+const pxValue = function () {
   return typedDistanceValue("px");
 };
-degValue = function () {
+const degValue = function () {
   return typedDistanceValue("deg");
 };
-percentValue = function () {
+const percentValue = function () {
   return typedDistanceValue("%");
 };
 
 function typedDistanceValue(type) {
+  let distance;
   const prob = rint(100);
   if (prob > 50) {
-    var distance = rint(500);
+    distance = rint(500);
     if (rint(10)) {
       distance %= 100;
     }
     distance += type;
   } else if (prob > 30) {
-    var distance = [-1, 1][(Math.random() * 2) | 0] * rint(500) + type;
+    distance = [-1, 1][(Math.random() * 2) | 0] * rint(500) + type;
   } else if (prob > 25) {
-    var distance = randoms() + type;
+    distance = randoms() + type;
   } else {
-    var distance = floatValue() * (rint(10) + 1) * (rint(10) + 1) + type;
+    distance = floatValue() * (rint(10) + 1) * (rint(10) + 1) + type;
   }
   return distance;
 }
 
-distanceValue = function () {
+const distanceValue = function () {
+  let distance;
   const types = ["em", "cm", "px", "mm", "in", "pc", "pt", "%", ""]; // ex
   const prob = rint(100);
   if (prob > 50) {
-    var distance = rint(50000);
+    distance = rint(50000);
     if (rint(2)) {
       distance %= 100;
     }
     distance += ra(types);
   } else if (prob > 30) {
-    var distance = [-1, 1][(Math.random() * 2) | 0] * rint(500) + ra(types);
+    distance = [-1, 1][(Math.random() * 2) | 0] * rint(500) + ra(types);
   } else if (prob > 25) {
-    var distance = randoms() + ra(types);
+    distance = randoms() + ra(types);
   } else {
-    var distance = floatValue() * (rint(10) + 1) * (rint(10) + 1) + ra(types);
+    distance = floatValue() * (rint(10) + 1) * (rint(10) + 1) + ra(types);
   }
   return distance;
 };
 
+// eslint-disable-next-line no-shadow
 function occurrences(string, subString, allowOverlapping) {
   string += "";
   subString += "";
@@ -532,15 +536,35 @@ function occurrences(string, subString, allowOverlapping) {
   let pos = 0;
   const step = allowOverlapping ? 1 : subString.length;
 
-  while (true) {
+  for (;;) {
     pos = string.indexOf(subString, pos);
     if (pos >= 0) {
       n++;
       pos += step;
-    } else break;
+    } else {
+      break;
+    }
   }
   return n;
 }
+
+module.exports = {
+  arrayWalk,
+  calcWidth,
+  degValue,
+  distanceValue,
+  getRandomColor,
+  getRandomHex,
+  occurrences,
+  pxValue,
+  ra,
+  raPos,
+  randbool,
+  randoms,
+  rint,
+  srint,
+  string,
+};
 
 /*
 function benchMark(){

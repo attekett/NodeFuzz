@@ -1,4 +1,4 @@
-require("./Helpers/randoms.js");
+const { calcWidth, ra, rint, randoms } = require("./Helpers/randoms.js");
 
 function generateTestCase() {
   let returnString =
