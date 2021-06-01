@@ -13,7 +13,7 @@ var path = require("path");
 var path = require("path");
 var fs = require("fs");
 var mkdirsSync = function (dirname, mode) {
-  if (mode === undefined) mode = 0777 ^ process.umask();
+  if (mode === undefined) mode = 0o777 ^ process.umask();
   var pathsCreated = [];
   var pathsFound = [];
   var fn = dirname;
