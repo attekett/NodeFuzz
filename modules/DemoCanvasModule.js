@@ -1,5 +1,13 @@
 const { calcWidth, ra, rint, randoms } = require("./Helpers/randoms.js");
 
+// eslint-disable-next-line no-extend-native
+Array.prototype.shuffle = function () {
+  const s = [];
+  while (this.length) s.push(this.splice(Math.random() * this.length, 1));
+  while (s.length) this.push(s.pop());
+  return this;
+};
+
 function generateTestCase() {
   let returnString =
     '<html>\n	<head>\n		<style></style>\n	</head>\n	<body>\n<canvas id="test"></canvas>';
@@ -9,16 +17,13 @@ function generateTestCase() {
   return returnString;
 }
 
-function generateCanvas(num) {
-  Array.prototype.shuffle = function () {
-    const s = [];
-    while (this.length) s.push(this.splice(Math.random() * this.length, 1));
-    while (s.length) this.push(s.pop());
-    return this;
-  };
+// TODO: get rid of these globals
+let width;
+let height;
 
+function generateCanvas(num) {
   let returnString = "";
-  let returnArray = new Array();
+  let returnArray = [];
   while (num--) {
     width = calcWidth();
     height = calcWidth();
@@ -27,7 +32,7 @@ function generateCanvas(num) {
     returnString += `canvas.setAttribute("width",${width})\ncanvas.setAttribute("height",${height})\n`;
     returnArray = returnArray.concat(getRandomCanvasFunction(10));
     returnArray = returnArray.shuffle();
-    for (i = 0; i < returnArray.length; i++) {
+    for (let i = 0; i < returnArray.length; i++) {
       returnString += returnArray[i];
     }
   }
@@ -36,7 +41,7 @@ function generateCanvas(num) {
 }
 
 function getRandomCanvasFunction(num) {
-  let returnArray = new Array();
+  let returnArray = [];
   while (num--) {
     const method = ra(canvasMethods);
     returnArray = returnArray.concat(method(rint(10) + 3));
@@ -45,7 +50,7 @@ function getRandomCanvasFunction(num) {
   return returnArray;
 }
 
-var canvasMethods = [canvasPathCurve];
+const canvasMethods = [canvasPathCurve];
 
 const canvasPath = [
   ["moveTo", widthheight],
@@ -57,7 +62,7 @@ const canvasPath = [
 ];
 
 function canvasPathCurve(num) {
-  let returnArray = new Array();
+  let returnArray = [];
   returnArray = returnArray.concat("try{ctx.beginPath();}catch(e){}\n");
 
   while (num--) {
@@ -71,6 +76,7 @@ function canvasPathCurve(num) {
   );
   return returnArray;
 }
+
 function widthheight() {
   if (rint(10000)) {
     return ` ${rint(width)},${rint(height)} `;
@@ -79,18 +85,22 @@ function widthheight() {
   const second = rint(100) ? rint(height) : randoms();
   return ` ${first},${second} `;
 }
+
 function widthheight2() {
   return `${widthheight()},${widthheight()}`;
 }
+
 function widthheight3() {
   return `${widthheight()},${widthheight()},${widthheight()}`;
 }
+
 function arcValue() {
   const clockwise = ra(["true", "false"]);
   return `${widthheight()},${randoms()},${Math.PI * Math.random()},${
     Math.PI * Math.random()
   },${clockwise}`;
 }
+
 function arcTo() {
   return `${widthheight2()},${randoms()}`;
 }
