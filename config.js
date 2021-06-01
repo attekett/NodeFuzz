@@ -37,21 +37,19 @@ reBuildClientFile: 		Used when selected module needs alterations to client-file.
 result_dir: 			Used by instrumentations: Directory where instrumentations save logs and repro-files.
 */
 
-var config = {}
+var config = {};
 
-config.bufferSize=10
+config.bufferSize = 10;
 //config.previousTestCasesBuffer=[]
 
+config.pid = process.pid;
+config.port = process.pid + 2000;
 
-config.pid=process.pid 
-config.port=process.pid+2000
+config.timeout = 20000;
+config.testCasesWithoutRestart = 100;
 
-config.timeout=20000
-config.testCasesWithoutRestart=100
-
-
-config.fuzzfile='./NodeFuzz.html'
-config.defaultModuleDirectory='./modules/'
+config.fuzzfile = "./NodeFuzz.html";
+config.defaultModuleDirectory = "./modules/";
 
 /*
 
@@ -63,65 +61,72 @@ config.grinder_key="AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPP"
 // if set to true will not run asan_symbolize and will attempt to report crash for symbolizing later
 config.no_symbolize=true
 */
-config.asan_symbolize='/path/to/your/asan_symbolize_new.py'
-
+config.asan_symbolize = "/path/to/your/asan_symbolize_new.py";
 
 /*
 reBuildClientFile modifies NodeFuzz.html content according to following values. 
 the client-file NodeFuzz.html has more tricks in it than just html-loading. ;)
 */
-config.reBuildClientFile=function (){
-	//
-	//Write your own function in here if needed.
-	//
-	var fs=require('fs')
-	var baseFile=fs.readFileSync(config.fuzzfile).toString()
-	var clientFile=baseFile.split('\n')
-	for (i=0; i<clientFile.length; i++) {
-		if(clientFile[i].indexOf('<script>')>-1){
-    		clientFile[i]=clientFile[i]+' \nvar tagtype="'+config.tagtype+'" \nvar port='+config.port+'\n var type="'+config.type+'"\n'
-    		break;
-    	}
-    };
-    return clientFile.join('\n')
-}
+config.reBuildClientFile = function () {
+  //
+  //Write your own function in here if needed.
+  //
+  var fs = require("fs");
+  var baseFile = fs.readFileSync(config.fuzzfile).toString();
+  var clientFile = baseFile.split("\n");
+  for (i = 0; i < clientFile.length; i++) {
+    if (clientFile[i].indexOf("<script>") > -1) {
+      clientFile[i] =
+        clientFile[i] +
+        ' \nvar tagtype="' +
+        config.tagtype +
+        '" \nvar port=' +
+        config.port +
+        '\n var type="' +
+        config.type +
+        '"\n';
+      break;
+    }
+  }
+  return clientFile.join("\n");
+};
 
-config.init=function(){
+config.init = function () {
+  if (process.platform == "win32") {
+    console.log("Loading windows-configuration.");
+    //Windows specific configurations.
 
-	if(process.platform=='win32'){
-		console.log('Loading windows-configuration.');
-		//Windows specific configurations.
+    //
+    //Your configs.
+    //
+  } else if (process.platform == "darwin") {
+    //OSX configs.
+  } else {
+    //Linux configs.
+    console.log("Loading linux-configuration.");
+    config.defaultInstrumentationFile =
+      "./instrumentations/instrumentation_linux_asan.js";
+    config.result_dir = "../results/";
+    config.type = "text/html";
+    config.tagtype = "html";
 
-		//
-		//Your configs.
-		//
-	}
-	else if(process.platform=='darwin'){
-		//OSX configs.
+    //Configurations for the demo Instrumentation
+    config.target = "chrome";
+    config.timeout = 1000;
+    config.launchCommand = "google-chrome";
+    config.browserArgs = [
+      "--user-data-dir=/tmp/" + config.pid + "/chrome-prof",
+      "--disable-translate",
+      "--incognito",
+      "--new-window",
+      "--no-default-browser-check",
+      "--allow-file-access-from-files",
+      "--no-first-run",
+      "--no-process-singleton-dialog",
+      "http://127.0.0.1:" + config.port,
+    ];
+    config.clientFile = config.reBuildClientFile();
+  }
+};
 
-	}
-	else{
-		//Linux configs.
-		console.log('Loading linux-configuration.')
-		config.defaultInstrumentationFile = './instrumentations/instrumentation_linux_asan.js'
-		config.result_dir='../results/'
-		config.type='text/html'
-		config.tagtype='html'
-
-
-		//Configurations for the demo Instrumentation
-		config.target='chrome'
-		config.timeout=1000
-		config.launchCommand='google-chrome'
-		config.browserArgs = ['--user-data-dir=/tmp/'+config.pid+'/chrome-prof','--disable-translate','--incognito', '--new-window','--no-default-browser-check','--allow-file-access-from-files', '--no-first-run' ,'--no-process-singleton-dialog' ,'http://127.0.0.1:'+config.port]
-		config.clientFile=config.reBuildClientFile()
-
-	}
-
-}
-
-
-
-
-module.exports = config
-
+module.exports = config;

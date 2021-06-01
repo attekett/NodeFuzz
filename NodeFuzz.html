@@ -1,70 +1,84 @@
 <html>
-<head>
-</head>
- <script>
-	  var status=true
-    var tags
-    var amount
-    var current=0
-    var target=''
-    window.addEventListener("load", function(event) {
-      target=document.getElementById('target')
-      socket = new WebSocket("ws://127.0.0.1:"+port, "fuzz-protocol");
+  <head> </head>
+  <script>
+    var status = true;
+    var tags;
+    var amount;
+    var current = 0;
+    var target = "";
+    window.addEventListener("load", function (event) {
+      target = document.getElementById("target");
+      socket = new WebSocket("ws://127.0.0.1:" + port, "fuzz-protocol");
       /*
         feedbacksocket = new WebSocket(loc, "feedback-protocol");
         feedbacksocket.addEventListener("open", function(event) {
           feedbacksocket.send('Feedback-loop initialized on time: '+(new Date()));
         });
       */
-      socket.addEventListener("open", function(event) {
-          socket.send('');
+      socket.addEventListener("open", function (event) {
+        socket.send("");
       });
-      socket.addEventListener("message", function(event) {
-          newTestCase(event.data);
+      socket.addEventListener("message", function (event) {
+        newTestCase(event.data);
       });
-      if(tagtype=='img' || tagtype=='video'){
-        document.body.removeChild(document.getElementById('target'))
-        if(tagtype=='img'){
-          var elements=50
+      if (tagtype == "img" || tagtype == "video") {
+        document.body.removeChild(document.getElementById("target"));
+        if (tagtype == "img") {
+          var elements = 50;
+        } else {
+          var elements = 10;
         }
-        else{
-          var elements=10
+        for (x = 0; x < elements; x++) {
+          var tag = document.body.appendChild(document.createElement(tagtype));
+          try {
+            tag.style.width = "50";
+            tag.style.height = "50";
+          } catch (e) {}
         }
-      for(x=0;x<elements;x++){
-        var tag=document.body.appendChild(document.createElement(tagtype))
-        try{
-        tag.style.width="50"
-        tag.style.height="50"
-        }catch(e){}
+        tags = document.getElementsByTagName(tagtype);
+        amount = tags.length;
       }
-      tags=document.getElementsByTagName(tagtype)
-      amount=tags.length
-      }
-    });  
-    function newTestCase(data){
-		status=true
-        if(tagtype=='img' || tagtype=='video'){
-          if(current==amount)
-            current=0
-          target = tags[current]
-          if(type=='text/html'){
+    });
+    function newTestCase(data) {
+      status = true;
+      if (tagtype == "img" || tagtype == "video") {
+        if (current == amount) current = 0;
+        target = tags[current];
+        if (type == "text/html") {
           target.src = (window.URL || window.webkitURL).createObjectURL(data);
-          }
-          else{
-          target.src = (window.URL || window.webkitURL).createObjectURL(new Blob([data],{type:type}));
-          }
-          current++
-          if(tagtype=='video'){target.play()}
-          socket.send('')
+        } else {
+          target.src = (window.URL || window.webkitURL).createObjectURL(
+            new Blob([data], { type: type }),
+          );
         }
-        else{
-         target.src=(window.URL || window.webkitURL).createObjectURL(new Blob([data],{type:type}))
+        current++;
+        if (tagtype == "video") {
+          target.play();
         }
+        socket.send("");
+      } else {
+        target.src = (window.URL || window.webkitURL).createObjectURL(
+          new Blob([data], { type: type }),
+        );
+      }
     }
-    function trySend(){if(status){status=false;try{if(socket.readyState == 1){socket.send('')}}catch(e){}}}
-  
+    function trySend() {
+      if (status) {
+        status = false;
+        try {
+          if (socket.readyState == 1) {
+            socket.send("");
+          }
+        } catch (e) {}
+      }
+    }
   </script>
-<body>
-  <iframe id='target' width=100% height=1000 onload=setTimeout(trySend,20)></iframe>
-</body>
-</html
+  <body>
+    <iframe
+      id="target"
+      width="100%"
+      height="1000"
+      onload="setTimeout(trySend,20)"
+    ></iframe>
+  </body>
+</html>

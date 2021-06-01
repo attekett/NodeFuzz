@@ -9,11 +9,16 @@
   },
   "main": "nodefuzz.js",
   "dependencies": {
-    "websocket" : ">=1.0.0"
-    },
-  "devDependencies": {},
+    "websocket": ">=1.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.3.0"
+  },
   "optionalDependencies": {},
   "engines": {
     "node": "*"
+  },
+  "prettier": {
+    "trailingComma": "all"
   }
 }
