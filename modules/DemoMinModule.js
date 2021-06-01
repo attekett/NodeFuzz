@@ -3,7 +3,7 @@
 //
 function generateTestCase() {
   let returnString = "<html><body><p>Hello Fuzz</p><script>\n";
-  for (x = 0; x < 10; x++) {
+  for (let x = 0; x < 10; x++) {
     returnString += `setTimeout(function(){document.body.style.zoom=${
       Math.random() * 3
     }},${Math.floor(Math.random() * 30)})\n`;

@@ -21,14 +21,10 @@
       socket.addEventListener("message", function (event) {
         newTestCase(event.data);
       });
-      if (tagtype == "img" || tagtype == "video") {
+      if (tagtype === "img" || tagtype === "video") {
         document.body.removeChild(document.getElementById("target"));
-        if (tagtype == "img") {
-          var elements = 50;
-        } else {
-          var elements = 10;
-        }
-        for (x = 0; x < elements; x++) {
+        var elements = tagtype === "img" ? 50 : 10;
+        for (let x = 0; x < elements; x++) {
           var tag = document.body.appendChild(document.createElement(tagtype));
           try {
             tag.style.width = "50";
@@ -41,10 +37,10 @@
     });
     function newTestCase(data) {
       status = true;
-      if (tagtype == "img" || tagtype == "video") {
+      if (tagtype === "img" || tagtype === "video") {
         if (current == amount) current = 0;
         target = tags[current];
-        if (type == "text/html") {
+        if (type === "text/html") {
           target.src = (window.URL || window.webkitURL).createObjectURL(data);
         } else {
           target.src = (window.URL || window.webkitURL).createObjectURL(
@@ -52,7 +48,7 @@
           );
         }
         current++;
-        if (tagtype == "video") {
+        if (tagtype === "video") {
           target.play();
         }
         socket.send("");

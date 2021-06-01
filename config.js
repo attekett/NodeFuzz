@@ -74,7 +74,7 @@ config.reBuildClientFile = function () {
   const fs = require("fs");
   const baseFile = fs.readFileSync(config.fuzzfile).toString();
   const clientFile = baseFile.split("\n");
-  for (i = 0; i < clientFile.length; i++) {
+  for (let i = 0; i < clientFile.length; i++) {
     if (clientFile[i].indexOf("<script>") > -1) {
       clientFile[
         i
@@ -86,14 +86,14 @@ config.reBuildClientFile = function () {
 };
 
 config.init = function () {
-  if (process.platform == "win32") {
+  if (process.platform === "win32") {
     console.log("Loading windows-configuration.");
     // Windows specific configurations.
 
     //
     // Your configs.
     //
-  } else if (process.platform == "darwin") {
+  } else if (process.platform === "darwin") {
     // OSX configs.
   } else {
     // Linux configs.

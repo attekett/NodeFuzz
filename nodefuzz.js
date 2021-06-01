@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 if (
-  process.argv.indexOf("help") != -1 ||
-  process.argv.indexOf("-help") != -1 ||
-  process.argv.indexOf("--help") != -1
+  process.argv.indexOf("help") !== -1 ||
+  process.argv.indexOf("-help") !== -1 ||
+  process.argv.indexOf("--help") !== -1
 ) {
   console.log("NodeFuzz v0.1.6");
   console.log("Check config.js for about everything.");
@@ -23,7 +23,7 @@ if (
 //
 const events = require("events");
 
-instrumentationEvents = new events.EventEmitter();
+const instrumentationEvents = new events.EventEmitter();
 const fs = require("fs");
 
 //
@@ -31,12 +31,12 @@ const fs = require("fs");
 // communication between modules without separate requires.)
 //
 if (
-  process.argv.indexOf("-c") != -1 ||
-  process.argv.indexOf("--config") != -1
+  process.argv.indexOf("-c") !== -1 ||
+  process.argv.indexOf("--config") !== -1
 ) {
   try {
     console.log("Loading config-file: ");
-    if (process.argv.indexOf("-c") != -1) {
+    if (process.argv.indexOf("-c") !== -1) {
       console.log(process.argv[process.argv.indexOf("-c") + 1]);
       config = require(process.argv[process.argv.indexOf("-c") + 1]);
     } else {
@@ -57,16 +57,16 @@ if (
   }
 }
 
-if (config.hasOwnProperty("init")) config.init();
+if (config.init) config.init();
 else console.log("config.js had no property init.");
 
 if (
-  process.argv.indexOf("-i") != -1 ||
-  process.argv.indexOf("--instrumentation") != -1
+  process.argv.indexOf("-i") !== -1 ||
+  process.argv.indexOf("--instrumentation") !== -1
 ) {
   try {
     console.log("Loading instrumentation-module: ");
-    if (process.argv.indexOf("-i") != -1) {
+    if (process.argv.indexOf("-i") !== -1) {
       console.log(process.argv[process.argv.indexOf("-i") + 1]);
       config.instrumentation = require(process.argv[
         process.argv.indexOf("-i") + 1
@@ -102,6 +102,7 @@ if (
 // ModuleLoader for modules used as testcase generators.
 //
 const http = require("http");
+const WebSocketServer = require("websocket").server;
 const moduleLoader = require("./moduleLoader.js");
 
 const fuzzModules = moduleLoader.loadModules();
@@ -113,14 +114,6 @@ config.previousTestCasesBuffer = [];
 const { previousTestCasesBuffer } = config;
 let httpRootDirSet;
 
-function cloneArray(obj) {
-  const copy = [];
-  for (let i = 0; i < obj.length; ++i) {
-    copy[i] = obj[i];
-  }
-  return copy;
-}
-
 //
 // HTTP-server.
 //
@@ -130,22 +123,22 @@ function cloneArray(obj) {
 //
 // TODO: Allow HTTP-server to respond with other files also.(NOTE: poor implementation done.)
 //
-
-if (config.hasOwnProperty("httpRootDir")) {
+let httpRootDirFiles;
+if (config.httpRootDir) {
   try {
     if (fs.statSync(config.httpRootDir).isDirectory()) {
-      var httpRootDirFiles = fs.readdirSync(config.httpRootDir);
+      httpRootDirFiles = fs.readdirSync(config.httpRootDir);
       httpRootDirSet = true;
     }
   } catch (e) {
-    `Loading http rootdir failed ${e}`;
+    console.log(`Loading http rootdir failed ${e}`);
   }
 }
 
 let websocketConnected = false;
 const server = http.createServer((request, response) => {
   if (!websocketConnected) {
-    if (request.url != "/favicon.ico") {
+    if (request.url !== "/favicon.ico") {
       response.writeHead(200);
       response.write(config.clientFile);
       response.end();
@@ -155,7 +148,7 @@ const server = http.createServer((request, response) => {
     }
   } else if (
     httpRootDirSet !== undefined &&
-    httpRootDirFiles.indexOf(request.url.trim().slice(1)) != -1
+    httpRootDirFiles.indexOf(request.url.trim().slice(1)) !== -1
   ) {
     console.log(request.url);
     response.writeHead(200);
@@ -170,21 +163,13 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(config.port, (err) => {
+  if (err) throw err;
   console.log(`Server listening port ${config.port}`);
 });
 
 // WebSocket inits.
-try {
-  var WebSocketServer = require("websocket").server;
-} catch (e) {
-  console.log(
-    'Failed to load websocket module. Run "npm install websocket" and try again.',
-  );
-  console.log("Exiting...");
-  process.exit(1);
-}
 
-wsServer = new WebSocketServer({
+const wsServer = new WebSocketServer({
   httpServer: server,
   autoAcceptConnections: false,
 });
@@ -203,23 +188,22 @@ if (config.addCustomWebSocketHandler)
 // websocketTimeout:  			Triggered if client fails to request new testcase within time defined by config.timeout.
 // websocketDisconnected: 		Triggered when the WebSocket-connection is disconnected
 //
+let sending = false;
+let timeoutGetNewTestcase; // TODO: is this the right scope for this?
+let testCasesWithoutRestartCounter = 0;
 if (config.disableDefaultWsOnRequest !== true) {
-  let testCasesWithoutRestartCounter = 0;
-  var sending = false;
   wsServer.on("request", (request) => {
     websocketConnected = true;
     if (
       request.requestedProtocols !== null &&
-      request.requestedProtocols[0] == "fuzz-protocol"
+      request.requestedProtocols[0] === "fuzz-protocol"
     ) {
-      connection = request.accept("fuzz-protocol", request.origin);
-      connection.on("message", (message) => {
+      const connection = request.accept("fuzz-protocol", request.origin);
+      connection.on("message", () => {
         if (!sending) {
           sending = true;
           testCasesWithoutRestartCounter++;
-          try {
-            clearTimeout(timeoutGetNewTestcase);
-          } catch (e) {}
+          clearTimeout(timeoutGetNewTestcase);
           if (testCasesWithoutRestartCounter > config.testCasesWithoutRestart) {
             sending = false;
             testCasesWithoutRestartCounter = 0;
@@ -237,9 +221,12 @@ if (config.disableDefaultWsOnRequest !== true) {
       });
     } else if (
       request.requestedProtocols !== null &&
-      request.requestedProtocols[0] == "feedback-protocol"
+      request.requestedProtocols[0] === "feedback-protocol"
     ) {
-      feedbackConnection = request.accept("feedback-protocol", request.origin);
+      const feedbackConnection = request.accept(
+        "feedback-protocol",
+        request.origin,
+      );
       feedbackConnection.on("message", (message) => {
         instrumentationEvents.emit("feedbackMessage", message.utf8Data);
       });
@@ -282,7 +269,7 @@ function sendNewTestCase(connection) {
 
   let currentTestCase;
   if (!config.disableTestCaseBuffer) {
-    if (testCaseBuffer.length == 0) {
+    if (testCaseBuffer.length === 0) {
       process.nextTick(() => {
         testCaseBuffer.push(ra(fuzzModules).fuzz());
       });
@@ -304,7 +291,7 @@ function sendNewTestCase(connection) {
   } else {
     currentTestCase = ra(fuzzModules).fuzz();
   }
-  if (currentTestCase !== undefined && currentTestCase != "") {
+  if (currentTestCase) {
     if (previousTestCasesBuffer.unshift(currentTestCase) > config.bufferSize) {
       previousTestCasesBuffer.pop();
     }
@@ -312,7 +299,7 @@ function sendNewTestCase(connection) {
     if (currentTestCase instanceof Buffer) {
       connection.sendBytes(currentTestCase);
     } else {
-      const test = new Buffer(currentTestCase);
+      const test = Buffer.from(currentTestCase);
       connection.sendBytes(test);
     }
     sending = false;
