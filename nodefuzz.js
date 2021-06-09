@@ -24,8 +24,7 @@ if (
 const events = require("events");
 
 // eslint-disable-next-line no-multi-assign
-const instrumentationEvents = (global.instrumentationEvents =
-  new events.EventEmitter());
+const instrumentationEvents = global.instrumentationEvents = new events.EventEmitter();
 const fs = require("fs");
 
 //
