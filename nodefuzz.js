@@ -23,7 +23,7 @@ if (
 //
 const events = require("events");
 
-const instrumentationEvents = new events.EventEmitter();
+const instrumentationEvents = global.instrumentationEvents = new events.EventEmitter();
 const fs = require("fs");
 
 //
